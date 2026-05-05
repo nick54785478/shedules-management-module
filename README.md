@@ -33,3 +33,48 @@
 > 採用 純粹派 DDD 設計，透過 CronParserPort 攔截無效的 Cron 表達式，確保 ScheduledJob 聚合根在記憶體中始終處於合法狀態。
 
 ## 開發者指南
+
+1. 新增一個 Job
+>* 實作 Job 類別：建立一個繼承 org.quartz.Job 的類別。
+>* 註冊 JobType：在 JobType 列舉中新增定義。
+>* 適配器配置：在 QuartzAdapter 的 createJobDetail 中加入對應邏輯。
+
+2. 透過 initializeTask 方法在 ScheduleJobRegistration 內註冊該排程  
+註. 此方法具備冪等性 (Replace 模式)
+
+## API 接口說明
+
+所有 API 基礎路徑為 /jobs。
+
+**1. 查詢所有排程狀態**
+>* Method: GET
+>* Path: /status
+>* 描述: 聚合資料庫配置與 Quartz 即時運行狀態。
+>* 降級行為: 若引擎離線，state 欄位將顯示 UNKNOWN (ENGINE_OFFLINE)。
+>* 響應: List<ScheduleJobView>
+
+**2. 暫停排程任務**
+>* Method: POST
+>* Path: /pause/{jobId}
+>* 描述: 根據 JobId 暫停任務。
+>* 一致性: 採原子操作，若引擎同步失敗則回滾資料庫狀態。
+
+**3. 重啟排程任務**
+>* Method: POST
+>* Path: /resume/{jobId}
+>* 描述: 恢復已暫停的任務進入等待執行狀態。
+
+**4. 更新 Cron 表達式**
+>* Method: POST
+>* Path: /update-cron
+>* 描述: 修改特定任務的執行週期。
+
+## 運維監控與異常處理
+
+**異常代碼定義**
+>* INVALID_CRON (422): 使用者輸入的 Cron 格式錯誤（如：日與週同時指定）。
+>* JOB_NOT_FOUND (404): 操作了不存在的任務識別碼。
+>* ENGINE_ERROR (500): Quartz 引擎發生底層技術故障（如：資料庫連線中斷）。
+
+**降級方案說明**
+> 當調用 getJobInfoResources 獲取監控清單時，若 Quartz 引擎離線，系統會自動切換為 UNKNOWN (ENGINE_OFFLINE) 狀態，此時僅顯示資料庫中的靜態配置，確保管理介面不因技術故障而崩潰。
