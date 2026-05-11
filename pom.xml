@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.example</groupId>
-	<artifactId>shedules-management-module</artifactId>
+	<artifactId>schedules-management-module</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>schedule-module</name>
+	<name>schedules-management-module</name>
 	<description>Demo project for Spring Boot</description>
 	<url/>
 	<licenses>
